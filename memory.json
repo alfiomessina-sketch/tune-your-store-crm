@@ -1,7 +1,7 @@
 {
   "profile": {
-    "business_type": "hotel",
-    "plan": 159,
+    "business_type": "attivita",
+    "plan": 69,
     "role": "admin",
     "payment": {
       "status": "paid",
