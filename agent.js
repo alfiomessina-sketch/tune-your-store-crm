@@ -8,9 +8,7 @@ app.use(express.json());
 const PORT = 4000;
 
 // ================= CONFIG =================
-const AZURA_URL = "https://tuneyourstore.net/api";
-const AZURA_API_KEY = "2c95e5794a004630:cfb68f18d9f87c5d58e22d5df3d9f2ae";
-
+const ORCH_URL = "http://localhost:3000";
 const OLLAMA_URL = "http://localhost:11434/api/generate";
 const OLLAMA_MODEL = "llama3";
 
@@ -23,6 +21,7 @@ function loadMemory() {
             profile: {
                 business_type: null,
                 plan: null,
+                client_id: null,
                 role: "admin",
                 payment: {
                     status: "trial",
@@ -41,30 +40,13 @@ function saveMemory(data) {
     fs.writeFileSync(memoryPath, JSON.stringify(data, null, 2));
 }
 
-// ================= PLAN LIMIT =================
-function getPlanLimit(plan) {
-    if (plan == 29) return 1;
-    if (plan == 69) return 1;
-    if (plan == 159) return 5;
-    return 0;
-}
-
-// ================= AZURA CALL =================
-async function azuraRequest(endpoint, method = "GET", body = null) {
-    const options = {
-        method: method,
-        headers: {
-            "Authorization": `Bearer ${AZURA_API_KEY}`,
-            "Accept": "application/json"
-        }
-    };
-
-    if (body) {
-        options.headers["Content-Type"] = "application/json";
-        options.body = JSON.stringify(body);
-    }
-
-    const res = await fetch(`${AZURA_URL}${endpoint}`, options);
+// ================= HTTP HELPER =================
+async function httpPost(url, body) {
+    const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+    });
 
     if (!res.ok) {
         const text = await res.text();
@@ -74,25 +56,16 @@ async function azuraRequest(endpoint, method = "GET", body = null) {
     return await res.json();
 }
 
-async function getAzuraStations() {
-    return await azuraRequest("/admin/stations");
+async function httpGet(url) {
+    const res = await fetch(url);
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text);
+    }
+    return await res.json();
 }
 
-async function createAzuraStation(shortName, displayName) {
-    return await azuraRequest("/admin/stations", "POST", {
-        name: displayName,
-        short_name: shortName,
-        description: "Created by TYS CRM"
-    });
-}
-
-async function setStationEnabled(stationId, enabled) {
-    return await azuraRequest(`/admin/stations/${stationId}`, "PUT", {
-        is_enabled: enabled
-    });
-}
-
-// ================= AI CALL =================
+// ================= AI =================
 async function askOllama(prompt) {
     const res = await fetch(OLLAMA_URL, {
         method: "POST",
@@ -146,20 +119,8 @@ Rispondi SOLO in JSON:
     }
 });
 
-// SET PROFILE MANUALE
-app.post("/setProfile", (req, res) => {
-    const { business_type, plan } = req.body;
-
-    const memory = loadMemory();
-    memory.profile.business_type = business_type;
-    memory.profile.plan = plan;
-
-    saveMemory(memory);
-    res.json({ reply: "Profilo aggiornato" });
-});
-
-// CREATE STATION
-app.post("/createStation", async (req, res) => {
+// CREATE CLIENT SU ORCHESTRATOR
+app.post("/createClient", async (req, res) => {
     try {
         const memory = loadMemory();
 
@@ -167,44 +128,61 @@ app.post("/createStation", async (req, res) => {
             return res.json({ reply: "Profilo non configurato" });
         }
 
+        const clientData = {
+            name: memory.profile.business_type,
+            email: null,
+            plan: memory.profile.plan
+        };
+
+        const result = await httpPost(`${ORCH_URL}/api/clients`, clientData);
+
+        memory.profile.client_id = result.client_id;
+        memory.profile.payment.status = "paid";
+        saveMemory(memory);
+
+        res.json({
+            reply: "Cliente creato su Orchestrator",
+            client_id: result.client_id
+        });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// CREATE STATION (TRAMITE ORCHESTRATOR)
+app.post("/createStation", async (req, res) => {
+    try {
+        const memory = loadMemory();
+
+        if (!memory.profile.client_id) {
+            return res.json({ reply: "Cliente non creato su Orchestrator" });
+        }
+
         if (memory.profile.payment.status === "unpaid") {
             return res.json({ reply: "Pagamento non attivo" });
         }
 
-        const stations = await getAzuraStations();
-        const prefix = `radio-${memory.profile.business_type}-`;
-
-        const existing = stations.filter(s =>
-            s.short_name.startsWith(prefix)
+        const result = await httpPost(
+            `${ORCH_URL}/api/clients/${memory.profile.client_id}/create-station`,
+            {}
         );
 
-        const limit = getPlanLimit(memory.profile.plan);
-
-        if (existing.length >= limit) {
-            return res.json({ reply: "Limite stazioni raggiunto" });
-        }
-
-        const nextIndex = existing.length + 1;
-        const shortName = `${prefix}${nextIndex}`;
-        const displayName = `Radio ${memory.profile.business_type} ${nextIndex}`;
-
-        const newStation = await createAzuraStation(shortName, displayName);
-
         res.json({
-            reply: "Stazione creata con successo",
-            station_id: newStation.id
+            reply: result.message,
+            station_id: result.station_id || null
         });
 
-} catch (err) {
-    console.error("ERRORE CREATE STATION:", err);
-    res.status(500).json({ error: err.message });
-}});
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
-// LIST STATIONS
+// LIST STATIONS (DAL MOTORE)
 app.get("/stations", async (req, res) => {
     try {
-        const stations = await getAzuraStations();
-        res.json(stations);
+        const data = await httpGet(`${ORCH_URL}/api/stations`);
+        res.json(data);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -216,10 +194,10 @@ app.get("/status", (req, res) => {
     res.json(memory.profile);
 });
 
-// SERVE DASHBOARD
+// DASHBOARD
 app.use(express.static(__dirname));
 
 // START
 app.listen(PORT, () => {
-    console.log(`TYS CRM + AI STABILE su http://localhost:${PORT}`);
+    console.log(`AGENT collegato a Orchestrator su http://localhost:${PORT}`);
 });
