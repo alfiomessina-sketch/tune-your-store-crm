@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TYS CRM Configuratore</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #111;
+            color: white;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #00aaff;
+        }
+
+        h2 {
+            margin-top: 25px;
+        }
+
+        button {
+            padding: 10px 16px;
+            margin: 5px;
+            border: none;
+            background: #333;
+            color: white;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: #555;
+        }
+
+        .active {
+            background: #00aaff !important;
+        }
+
+        .section {
+            margin-top: 15px;
+            padding: 15px;
+            background: #1e1e1e;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>TYS CRM Configuratore Attività</h1>
+
+<h2>1️⃣ Seleziona Piano</h2>
+<div class="section">
+    <button onclick="selectPlan(159)">Hotel 159</button>
+    <button onclick="selectPlan(69)">Attività 69</button>
+    <button onclick="selectPlan(29)">Attività 29</button>
+</div>
+
+<h2>2️⃣ Tipo Attività</h2>
+<div class="section" id="activitySection"></div>
+
+<h2>3️⃣ Sottocategoria</h2>
+<div class="section" id="subcategorySection"></div>
+
+<script>
+
+let selectedPlan = null;
+
+function clearSections() {
+    document.getElementById("activitySection").innerHTML = "";
+    document.getElementById("subcategorySection").innerHTML = "";
+}
+
+function selectPlan(plan) {
+    selectedPlan = plan;
+    clearSections();
+
+    if (plan === 159) {
+        showHotelCategories();
+    } else {
+        showBusinessCategories();
+    }
+}
+
+// ================= HOTEL =================
+function showHotelCategories() {
+    const container = document.getElementById("activitySection");
+
+    const hotelFeatures = [
+        "Piscina",
+        "Bar",
+        "Ristorante",
+        "Toilet",
+        "Sauna",
+        "Spa",
+        "Centro Massaggi",
+        "Beach",
+        "Stanze"
+    ];
+
+    hotelFeatures.forEach(feature => {
+        const btn = document.createElement("button");
+        btn.innerText = feature;
+        btn.onclick = () => showHotelSub(feature);
+        container.appendChild(btn);
+    });
+}
+
+function showHotelSub(feature) {
+    const container = document.getElementById("subcategorySection");
+    container.innerHTML = "";
+
+    const subs = {
+        "Piscina": ["Indoor", "Outdoor", "Riscaldata"],
+        "Bar": ["Lobby Bar", "Pool Bar", "Night Bar"],
+        "Ristorante": ["Gourmet", "Buffet", "Internazionale"],
+        "Spa": ["Luxury", "Wellness", "Medical Spa"],
+        "Centro Massaggi": ["Relax", "Sportivo", "Terapeutico"],
+        "Beach": ["Privata", "Pubblica", "Resort"],
+        "Stanze": ["Standard", "Deluxe", "Suite"],
+        "Sauna": ["Finlandese", "Turca", "Aromatica"],
+        "Toilet": ["Area Comune", "Spa Area", "Piscina Area"]
+    };
+
+    if (subs[feature]) {
+        subs[feature].forEach(sub => {
+            const btn = document.createElement("button");
+            btn.innerText = sub;
+            container.appendChild(btn);
+        });
+    }
+}
+
+// ================= ATTIVITÀ 69 / 29 =================
+function showBusinessCategories() {
+    const container = document.getElementById("activitySection");
+
+    const categories = [
+        "Food",
+        "Retail",
+        "Supermercato",
+        "Farmacia",
+        "Palestra",
+        "Centro Estetico",
+        "Studio Medico"
+    ];
+
+    categories.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.innerText = cat;
+        btn.onclick = () => showBusinessSub(cat);
+        container.appendChild(btn);
+    });
+}
+
+function showBusinessSub(category) {
+    const container = document.getElementById("subcategorySection");
+    container.innerHTML = "";
+
+    const subs = {
+        "Food": ["Ristorante", "Trattoria", "Bar", "Caffè", "Gelateria", "Pizzeria"],
+        "Retail": ["Abbigliamento", "Elettronica", "Arredamento"],
+        "Supermercato": ["Mini Market", "Ipermercato", "Bio Market"],
+        "Farmacia": ["Farmacia", "Parafarmacia"],
+        "Palestra": ["Fitness", "CrossFit", "Yoga Studio"],
+        "Centro Estetico": ["Nail Bar", "Beauty Center", "Spa Urbana"],
+        "Studio Medico": ["Dentista", "Cardiologo", "Fisioterapia"]
+    };
+
+    if (subs[category]) {
+        subs[category].forEach(sub => {
+            const btn = document.createElement("button");
+            btn.innerText = sub;
+            container.appendChild(btn);
+        });
+    }
+}
+
+</script>
+
+</body>
+</html>

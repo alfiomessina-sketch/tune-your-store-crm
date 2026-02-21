@@ -1,0 +1,12 @@
+{
+  "profile": {
+    "business_type": "hotel",
+    "plan": 159,
+    "role": "admin",
+    "payment": {
+      "status": "paid",
+      "billing_cycle": "monthly",
+      "next_due": "2026-03-21T16:22:24.896Z"
+    }
+  }
+}

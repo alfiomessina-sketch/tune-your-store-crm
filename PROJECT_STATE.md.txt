@@ -1,0 +1,71 @@
+# TUNE YOUR STORE – PROJECT STATE
+
+## Ambiente Locale
+- Windows 11
+- Node.js v24
+- Backend Express su http://localhost:4000
+- Ollama installato su porta 11434
+- AzuraCast remoto su https://tuneyourstore.net
+
+## Struttura Cartella
+
+TuneYourStore/
+??? agent/
+    ??? agent.js
+    ??? dashboard.html
+    ??? memory.json
+    ??? PROJECT_STATE.md
+    ??? package.json
+
+## Backend Attivo
+
+Server avviato con:
+node agent.js
+
+Messaggio console:
+TYS CRM STABILE su http://localhost:4000
+
+## Endpoint Attivi
+
+POST /setProfile
+POST /setPayment
+POST /createStation
+GET  /stations
+GET  /status
+GET  /checkDue
+
+## Integrazione Azura
+
+- URL: https://tuneyourstore.net/api
+- Autenticazione: Authorization: Bearer API_KEY
+- Creazione stazioni funzionante
+- Lista stazioni funzionante
+
+## Dashboard
+
+- Selezione piano:
+    - Hotel 159
+    - Attività 69
+    - Attività 29
+
+- Selezione tipo attività dinamica
+- Sottocategorie dinamiche
+
+Dashboard servita da:
+http://localhost:4000/dashboard.html
+
+## Stato Funzionante
+
+? Creazione radio OK
+? Connessione Azura OK
+? Fetch nativo Node OK
+? Express static OK
+? Struttura CRM stabile
+
+## Prossimo Step Possibile
+
+- Eliminazione stazione
+- Multi cliente reale
+- Database SQLite
+- Integrazione Stripe
+- AI decisionale con Ollama
